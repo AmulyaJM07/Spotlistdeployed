@@ -90,7 +90,7 @@ auth_manager = get_auth_manager(state)
 query_params = st.query_params
 if "code" in query_params and st.session_state.token_info is None:
     code = query_params.get("code",[None])[0]
-    if code: auth_manager = get_auth_manager(query_params.get("state",[None][0])
+    if code: auth_manager = get_auth_manager(query_params.get("state",[None])[0])
         token_info = auth_manager.get_access_token(code, as_dict=True)
         if token_info:
             st.session_state.token_info = token_info

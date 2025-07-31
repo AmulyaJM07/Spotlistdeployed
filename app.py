@@ -86,8 +86,9 @@ def authenticate():
         client_secret=CLIENT_SECRET,
         redirect_uri=REDIRECT_URI,
         scope=SCOPE,
-        cache_path=".cache",
-        show_dialog=True
+        cache_path=None,
+        show_dialog=True,
+        state=state
     )
     return Spotify(auth_manager=auth_manager), auth_manager
 

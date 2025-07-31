@@ -4,9 +4,9 @@ from spotipy.oauth2 import SpotifyOAuth
 from spotipy.exceptions import SpotifyException
 
 # Spotify credentials
-CLIENT_ID = "c62d0951e82c44988af6e141e2496711"
-CLIENT_SECRET = "92ad47d91a294663addf93fd511f0a61"
-REDIRECT_URI = "http://127.0.0.1:8888/callback"
+CLIENT_ID = st.secrets["CLIENT_ID"]
+CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
+REDIRECT_URI = st.secrets["REDIRECT_URI"]
 SCOPE = "playlist-modify-public playlist-modify-private"
 
 # Background image

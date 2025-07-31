@@ -91,8 +91,8 @@ if "code" in query_params:
     if token_info:
         st.session_state.token_info = token_info
         st.session_state.sp = Spotify(auth=token_info['access_token'])
-        st.set_query_params()  # Clear URL
-        st.rerun()
+        st.set_query_params(**{})  # Clear URL
+        st.experimental_rerun()
 
 # 🟢 Authenticated state
 if st.session_state.sp:

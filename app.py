@@ -1,6 +1,5 @@
 import streamlit as st
 import uuid
-import os
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth
 from spotipy.exceptions import SpotifyOauthError, SpotifyException
@@ -12,9 +11,8 @@ REDIRECT_URI = st.secrets["REDIRECT_URI"]
 SCOPE = "playlist-modify-public playlist-modify-private"
 
 # Background image styling
-BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1647866872319-683f5c4c56e6?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDI1fHx8ZW58MHx8fHx8"
+BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1647866872319-683f5c4c56e6?fm=jpg&q=60&w=3000"
 
-# Set background style
 st.markdown(f"""
     <style>
     .stApp {{
@@ -69,7 +67,7 @@ def get_auth_manager(state=None):
         scope=SCOPE,
         show_dialog=True,      # Force login every time
         cache_path=None,
-        state = state# Prevent shared token cache
+        state=state
     )
 
 # Session state init
@@ -80,27 +78,30 @@ if "sp" not in st.session_state:
 if "playlist_id" not in st.session_state:
     st.session_state.playlist_id = None
 
-# Main Title
+# Title
 st.markdown("<h1>✨ Spotify Playlist Maker</h1>", unsafe_allow_html=True)
 
+# Start login process
 state = str(uuid.uuid4())
 auth_manager = get_auth_manager(state)
 
-# 🔁 OAuth callback handler
-query_params = st.query_params
-if "code" in query_params and st.session_state.token_info is None:
-    code = query_params.get("code",[None])[0]
-    if code: auth_manager = get_auth_manager(query_params.get("state",[None])[0])
+# Check URL params
+params = st.query_params
+if "code" in params and st.session_state.token_info is None:
+    try:
+        code = params.get("code", [None])[0]
+        auth_manager = get_auth_manager(params.get("state", [None])[0])
         token_info = auth_manager.get_access_token(code, as_dict=True)
+
         if token_info:
             st.session_state.token_info = token_info
-            st.session_state.sp = Spotify(auth=token_info['access_token'])
+            st.session_state.sp = Spotify(auth=token_info["access_token"])
             st.rerun()
     except SpotifyOauthError:
         st.error("⚠️ Login failed. Please try again.")
         st.stop()
 
-# 🟢 Authenticated state
+# Logged in
 if st.session_state.sp:
     sp = st.session_state.sp
     try:
@@ -135,6 +136,6 @@ if st.session_state.sp:
         st.session_state.sp = None
         st.session_state.token_info = None
 else:
-    # 🟡 Not logged in yet
+    # Not logged in
     login_url = auth_manager.get_authorize_url()
     st.markdown(f"### [🔐 Click here to login with Spotify]({login_url})")

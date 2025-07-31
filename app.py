@@ -91,7 +91,7 @@ st.markdown("<h1>✨ Spotify Playlist Maker</h1>", unsafe_allow_html=True)
 query_params = st.query_params
 if "code" in query_params and st.session_state.token_info is None:
     code = query_params["code"][0]
-    token_info = auth_manager.get_access_token(code, as_dict=True)
+    token_info = auth_manager.get_access_token(code,check_cache=False, as_dict=True)
     if token_info:
         st.session_state.token_info = token_info
         st.session_state.sp = Spotify(auth=token_info['access_token'])

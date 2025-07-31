@@ -85,13 +85,12 @@ auth_manager = get_auth_manager()
 
 # 🔁 OAuth callback handler
 query_params = st.query_params
-if "code" in query_params:
+if "code" in query_params and st.session_state.token_info is None:
     code = query_params["code"][0]
     token_info = auth_manager.get_access_token(code, as_dict=True)
     if token_info:
         st.session_state.token_info = token_info
         st.session_state.sp = Spotify(auth=token_info['access_token'])
-        st.set_query_params(**{})  # Clear URL
         st.experimental_rerun()
 
 # 🟢 Authenticated state

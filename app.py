@@ -1,4 +1,5 @@
 import streamlit as st
+import uuid
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth
 from spotipy.exceptions import SpotifyException
@@ -81,6 +82,7 @@ st.markdown(f"""
 
 # Spotify authentication
 def authenticate():
+    state = str(uuid.uuid4())
     auth_manager = SpotifyOAuth(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,

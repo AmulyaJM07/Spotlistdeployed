@@ -1,10 +1,11 @@
 import streamlit as st
 import uuid
+import os
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth
 from spotipy.exceptions import SpotifyException
 
-# Spotify credentials from secrets
+# Spotify credentials
 CLIENT_ID = st.secrets["CLIENT_ID"]
 CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
 REDIRECT_URI = st.secrets["REDIRECT_URI"]
@@ -13,7 +14,6 @@ SCOPE = "playlist-modify-public playlist-modify-private"
 # Background image styling
 BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1647866872319-683f5c4c56e6?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDI1fHx8ZW58MHx8fHx8"
 
-# Set background style
 st.markdown(f"""
     <style>
     .stApp {{
@@ -57,20 +57,27 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# ------------------- 🔐 Auth Flow -------------------
+# ------------------- SESSION ID -------------------
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
 
+CACHE_PATH = f".cache-{st.session_state.session_id}"
+
+# ------------------- SPOTIFY AUTH -------------------
 @st.cache_resource(show_spinner=False)
-def get_auth_manager():
+def get_auth_manager(cache_path):
     return SpotifyOAuth(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
         redirect_uri=REDIRECT_URI,
         scope=SCOPE,
-        show_dialog=True,
-        cache_path=None  # 👈 Prevent shared tokens
+        cache_path=cache_path,
+        show_dialog=True
     )
 
-# Session state init
+auth_manager = get_auth_manager(CACHE_PATH)
+
+# Initialize session state
 if "token_info" not in st.session_state:
     st.session_state.token_info = None
 if "sp" not in st.session_state:
@@ -78,12 +85,9 @@ if "sp" not in st.session_state:
 if "playlist_id" not in st.session_state:
     st.session_state.playlist_id = None
 
-# Main Title
 st.markdown("<h1>✨ Spotify Playlist Maker</h1>", unsafe_allow_html=True)
 
-auth_manager = get_auth_manager()
-
-# 🔁 OAuth callback handler
+# Handle OAuth callback
 query_params = st.query_params
 if "code" in query_params and st.session_state.token_info is None:
     code = query_params["code"][0]
@@ -93,13 +97,14 @@ if "code" in query_params and st.session_state.token_info is None:
         st.session_state.sp = Spotify(auth=token_info['access_token'])
         st.rerun()
 
-# 🟢 Authenticated state
+# If authenticated
 if st.session_state.sp:
     sp = st.session_state.sp
     try:
         user = sp.current_user()
         st.success(f"✅ Logged in as {user['display_name']}", icon="✅")
 
+        # Create playlist
         playlist_name = st.text_input("Enter Playlist Name")
         if st.button("🎵 Create Playlist"):
             if playlist_name.strip() == "":
@@ -109,6 +114,7 @@ if st.session_state.sp:
                 st.session_state.playlist_id = new_playlist["id"]
                 st.success(f"Playlist '{playlist_name}' created!", icon="🎉")
 
+        # Add song to playlist
         if st.session_state.playlist_id:
             song_name = st.text_input("Enter Song Name")
             if st.button("➕ Add Song"):
@@ -123,11 +129,19 @@ if st.session_state.sp:
                         st.success(f"✅ Added '{track['name']}' by {track['artists'][0]['name']}' to playlist!")
                     else:
                         st.error("⚠️ Song not found.")
+        
+        # Logout
+        if st.button("🔓 Logout"):
+            st.session_state.clear()
+            if os.path.exists(CACHE_PATH):
+                os.remove(CACHE_PATH)
+            st.rerun()
+
     except SpotifyException as e:
         st.error("Spotify error: " + str(e))
         st.session_state.sp = None
         st.session_state.token_info = None
+
 else:
-    # 🟡 Not logged in yet
     login_url = auth_manager.get_authorize_url()
     st.markdown(f"### [🔐 Click here to login with Spotify]({login_url})")

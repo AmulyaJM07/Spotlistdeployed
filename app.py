@@ -86,11 +86,11 @@ state = str(uuid.uuid4())
 auth_manager = get_auth_manager(state)
 
 # Check URL params
-params = st.query_params
-if "code" in params and st.session_state.token_info is None:
+query_params = st.query_params
+if "code" in query_params and st.session_state.token_info is None:
     try:
-        code = params.get("code", [None])[0]
-        auth_manager = get_auth_manager(params.get("state", [None])[0])
+        code = query_params.get("code", [None])[0]
+        auth_manager = get_auth_manager()
         token_info = auth_manager.get_access_token(code, as_dict=True)
 
         if token_info:

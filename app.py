@@ -65,8 +65,8 @@ def get_auth_manager(state=None):
         client_secret=CLIENT_SECRET,
         redirect_uri=REDIRECT_URI,
         scope=SCOPE,
-        show_dialog=True,      # Force login every time
-        cache_path=None,
+        show_dialog=True,
+        cache_path=f".cache-{state}",  # per-user cache to prevent reuse
         state=state
     )
 
@@ -85,12 +85,16 @@ st.markdown("<h1>✨ Spotify Playlist Maker</h1>", unsafe_allow_html=True)
 state = str(uuid.uuid4())
 auth_manager = get_auth_manager(state)
 
-# Check URL params
-query_params = st.query_params
-if "code" in query_params and st.session_state.token_info is None:
+# Get URL query parameters
+params = st.query_params
+
+# Handle Spotify redirect
+if "code" in params and st.session_state.token_info is None:
     try:
-        code = query_params.get("code", [None])[0]
-        auth_manager = get_auth_manager()
+        code = params["code"]
+        state_from_url = params.get("state")
+        auth_manager = get_auth_manager(state_from_url)
+
         token_info = auth_manager.get_access_token(code, as_dict=True)
 
         if token_info:
@@ -101,7 +105,7 @@ if "code" in query_params and st.session_state.token_info is None:
         st.error("⚠️ Login failed. Please try again.")
         st.stop()
 
-# Logged in
+# ✅ Logged in
 if st.session_state.sp:
     sp = st.session_state.sp
     try:
@@ -131,6 +135,14 @@ if st.session_state.sp:
                         st.success(f"✅ Added '{track['name']}' by {track['artists'][0]['name']}' to playlist!")
                     else:
                         st.error("⚠️ Song not found.")
+        
+        # Optional: Logout button
+        if st.button("🚪 Logout"):
+            st.session_state.token_info = None
+            st.session_state.sp = None
+            st.session_state.playlist_id = None
+            st.rerun()
+
     except SpotifyException as e:
         st.error("Spotify error: " + str(e))
         st.session_state.sp = None

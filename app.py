@@ -95,12 +95,20 @@ def authenticate():
     return Spotify(auth_manager=auth_manager), auth_manager
 
 def get_valid_spotify():
-    if "auth_manager" not in st.session_state:
+    if "auth_manager" not in st.session_state or st.session_state.auth_manager is None:
         return None, None
+
     auth_manager = st.session_state.auth_manager
-    if auth_manager.is_token_expired(auth_manager.cache_handler.get_cached_token()):
-        auth_manager.refresh_access_token(auth_manager.cache_handler.get_cached_token()["refresh_token"])
+    token_info = auth_manager.cache_handler.get_cached_token()
+
+    if token_info is None:
+        return None, None  # ⚠️ No token to use
+
+    if auth_manager.is_token_expired(token_info):
+        auth_manager.refresh_access_token(token_info["refresh_token"])
+
     return Spotify(auth_manager=auth_manager), auth_manager
+
 
 # Session state setup
 if "sp" not in st.session_state:

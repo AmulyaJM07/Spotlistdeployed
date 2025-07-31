@@ -1,5 +1,6 @@
 import streamlit as st
 import uuid
+import os
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth
 from spotipy.exceptions import SpotifyOauthError, SpotifyException
@@ -60,14 +61,15 @@ st.markdown(f"""
 # ------------------- 🔐 Auth Flow -------------------
 
 @st.cache_resource(show_spinner=False)
-def get_auth_manager():
+def get_auth_manager(state=None):
     return SpotifyOAuth(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
         redirect_uri=REDIRECT_URI,
         scope=SCOPE,
         show_dialog=True,      # Force login every time
-        cache_path=None        # Prevent shared token cache
+        cache_path=None,
+        state = state# Prevent shared token cache
     )
 
 # Session state init
@@ -81,14 +83,15 @@ if "playlist_id" not in st.session_state:
 # Main Title
 st.markdown("<h1>✨ Spotify Playlist Maker</h1>", unsafe_allow_html=True)
 
-auth_manager = get_auth_manager()
+state = str(uuid.uuid4())
+auth_manager = get_auth_manager(state)
 
 # 🔁 OAuth callback handler
 query_params = st.query_params
 if "code" in query_params and st.session_state.token_info is None:
-    code = query_params["code"][0]
-    try:
-        token_info = auth_manager.get_access_token(code, check_cache=False, as_dict=True)
+    code = query_params.get("code",[None])[0]
+    if code: auth_manager = get_auth_manager(query_params.get("state",[None][0])
+        token_info = auth_manager.get_access_token(code, as_dict=True)
         if token_info:
             st.session_state.token_info = token_info
             st.session_state.sp = Spotify(auth=token_info['access_token'])
